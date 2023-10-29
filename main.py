@@ -41,7 +41,7 @@ def index():
             # Identify DAG to trigger using rules engine
             dag_to_trigger = rules_engine(assessment)
             if dag_to_trigger:
-                return "assessment complete - triggering {}".format(dag_to_trigger), 200
+                return "assessment complete - triggering dag", 200
             else:
                 return "assessment complete - criteria not met for any DAG", 200
     except:
@@ -67,6 +67,7 @@ WHERE LOAD_DATE >= EXTRACT(DATE FROM CURRENT_TIMESTAMP())-1
     return results
 
 def rules_engine(query_results):
+    client = bigquery.Client()
     # initialize a record (might not be the cleanest way to do this??)
     src_table_1 = False
     src_table_2 = False
@@ -107,21 +108,36 @@ def rules_engine(query_results):
     #   src_table_2
     #   src_table_3
     if src_table_1 and src_table_2 and src_table_3 and not retail_account:
-        return 'retail_account'
+        client = bigquery.Client()
+        query = """
+        INSERT INTO dataform.dag_invocations
+        VALUES('retail_account', CURRENT_TIMESTAMP())
+            """
     # 2. customer - depends on:
     #   retail_account
     #   src_table_4
     #   src_table_5
     elif retail_account and src_table_4 and src_table_5 and not customer:
-        return 'customer'
+        query = """
+        INSERT INTO dataform.dag_invocations
+        VALUES('customer', CURRENT_TIMESTAMP())
+            """
     # 3. sales - depends on:
     #   retail_account
     #   customer
     #   src_table_6
     elif retail_account and customer and src_table_6 and not sales:
-        return 'sales'
+        query = """
+        INSERT INTO dataform.dag_invocations
+        VALUES('sales', CURRENT_TIMESTAMP())
+            """
     else:
-        return None
+        query = """
+        INSERT INTO dataform.dag_invocations
+        VALUES('none', CURRENT_TIMESTAMP())
+            """
+    client.query(query)
+    return query
 
 # [START eventarc_gcs_server]
 if __name__ == "__main__":
