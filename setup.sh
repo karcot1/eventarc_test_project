@@ -23,14 +23,14 @@ gcloud projects add-iam-policy-binding $PROJECT \
     --member=serviceAccount:${SVC_ACCOUNT} \
     --role='roles/eventarc.admin'
 
-
 # Create a trigger from BigQuery
-gcloud eventarc triggers delete ${SERVICE}-trigger --location ${REGION}
-gcloud eventarc triggers create ${SERVICE}-trigger \
-  --location ${REGION} --service-account ${SVC_ACCOUNT} \
-  --destination-run-service ${SERVICE}  \
+gcloud eventarc triggers delete bq-cloud-run-trigger --location us-central1
+gcloud eventarc triggers create bq-cloud-run-trigger \
+  --location us-central1 --service-account "1054873895331-compute@developer.gserviceaccount.com" \
+  --destination-run-service bq-cloud-run  \
   --event-filters type=google.cloud.audit.log.v1.written \
   --event-filters methodName=google.cloud.bigquery.v2.JobService.InsertJob \
-  --event-filters serviceName=bigquery.googleapis.com 
+  --event-filters serviceName=bigquery.googleapis.com \
+  --event-filters resourceName=projects/dataform-test-362521/datasets/dataform/tables/ad_and_ingest_metadata
   
 #  --event-filters resourceName=projects/_/buckets/"$MY_GCS_BUCKET"
