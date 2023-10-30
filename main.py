@@ -69,16 +69,16 @@ def index():
             if dag_to_trigger:
                 return "assessment complete - triggering dag", 200
             else:
-                entry = dict(
-                    severity="NOTICE",
-                    message="Metadata does not meet criteria. Stopping...",
-                    # Log viewer accesses 'component' as jsonPayload.component'.
-                    component="false-alarm"
-                )
-                print(json.dumps(entry))
-                return "assessment complete - criteria not met for any DAG", 200
+                return "no DAG to trigger", 200
     except:
         # if these fields are not in the JSON, ignore
+        entry = dict(
+            severity="NOTICE",
+            message="Metadata does not meet criteria. Stopping...",
+            # Log viewer accesses 'component' as jsonPayload.component'.
+            component="false-alarm"
+        )
+        print(json.dumps(entry))
         pass
     return "ok", 200
 # [END eventarc_gcs_handler]
@@ -94,24 +94,29 @@ def assess_ingest_tables():
 
     client = bigquery.Client()
     query = """
-SELECT
-    INGEST_CD,
-    OBJECT,
-    STATUS,
-    LOAD_DATE
-FROM dataform.ad_and_ingest_metadata
-WHERE EXTRACT(DATE FROM LOAD_DATE) >= EXTRACT(DATE FROM CURRENT_TIMESTAMP())-1
+INSERT INTO dataform.dag_invocations VALUES ('test',CURRENT_TIMESTAMP())
     """
-    job = client.query(query)
-    results = job.result()
-    results_str = ' '.join(results)
-    entry = dict(
-        severity="NOTICE",
-        message=results_str,
-        # Log viewer accesses 'component' as jsonPayload.component'.
-        component="bq-output"
-    )
-    print(json.dumps(entry))
+    client.query(query)
+    return(query)
+#     query = """
+# SELECT
+#     INGEST_CD,
+#     OBJECT,
+#     STATUS,
+#     LOAD_DATE
+# FROM dataform.ad_and_ingest_metadata
+# WHERE STATUS = "SUCCESS" AND EXTRACT(DATE FROM LOAD_DATE) >= EXTRACT(DATE FROM CURRENT_TIMESTAMP())-1
+#     """
+#     job = client.query(query)
+#     results = job.result()
+#     results_str = ' '.join(results)
+#     entry = dict(
+#         severity="NOTICE",
+#         message=results_str,
+#         # Log viewer accesses 'component' as jsonPayload.component'.
+#         component="bq-output"
+#     )
+#     print(json.dumps(entry))
 
     return results
  
