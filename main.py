@@ -26,6 +26,7 @@ app = Flask(__name__)
 # [START eventarc_gcs_handler]
 @app.route('/', methods=['POST'])
 def index():
+
     entry = dict(
         severity="NOTICE",
         message="Insert statement detected - running initial checks",
@@ -33,9 +34,11 @@ def index():
         component="cloud-run-job-start"
     )
     print(json.dumps(entry))
+
     # Gets the Payload data from the Audit Log
     content = request.json
     try:
+
         entry = dict(
             severity="NOTICE",
             message="Checking metadata...",
@@ -43,12 +46,13 @@ def index():
             component="get-logging-metadata"
         )
         print(json.dumps(entry))
-        print(content)
+
         ds = content['resource']['labels']['dataset_id']
         tbl = content['protoPayload']['resourceName']
         rows = int(content['protoPayload']['metadata']['tableDataChange']['insertedRowsCount'])
         if ds == 'dataform' and tbl.endswith('tables/ad_and_ingest_metadata') and rows > 0:
             # Run assessment on metadata object in BigQuery
+            
             entry = dict(
                 severity="NOTICE",
                 message="Metadata successfully meets criteria. Running assessment...",
@@ -56,11 +60,13 @@ def index():
                 component="run-assessment"
             )
             print(json.dumps(entry))
+
             assessment = assess_ingest_tables()
             # Identify DAG to trigger using rules engine
+            
             entry = dict(
                 severity="NOTICE",
-                message="Assessment completel. Writing to BigQuery...",
+                message="Assessment completed. Writing to BigQuery...",
                 # Log viewer accesses 'component' as jsonPayload.component'.
                 component="write-to-bq"
             )
@@ -101,22 +107,9 @@ SELECT
     STATUS,
     LOAD_DATE
 FROM dataform.ad_and_ingest_metadata
-WHERE STATUS = "SUCCESS" AND EXTRACT(DATE FROM LOAD_DATE) >= EXTRACT(DATE FROM CURRENT_TIMESTAMP())-1
+WHERE STATUS = "SUCCESS" AND EXTRACT(DATE FROM LOAD_DATE) = EXTRACT(DATE FROM CURRENT_TIMESTAMP())
     """
     results = client.query(query)
-    print(results)
-    return results
-#     job = client.query(query)
-#     results = job.result()
-#     results_str = ' '.join(results)
-#     entry = dict(
-#         severity="NOTICE",
-#         message=results_str,
-#         # Log viewer accesses 'component' as jsonPayload.component'.
-#         component="bq-output"
-#     )
-#     print(json.dumps(entry))
-
     return results
  
 
