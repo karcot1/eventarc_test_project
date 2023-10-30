@@ -156,7 +156,15 @@ def rules_engine(query_results):
     dag_to_invoke = None
 
     # create assessment
-    sys.stdout.write('Applying rules...')
+
+    entry = dict(
+        severity="NOTICE",
+        message="Applying rules...",
+        # Log viewer accesses 'component' as jsonPayload.component'.
+        component="apply-rules"
+    )
+    print(json.dumps(entry))
+    
     for row in query_results:
         if row[1] == 'src_table_1' and row[2] == 'SUCCESS':
             src_table_1 = True
