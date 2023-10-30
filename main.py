@@ -14,6 +14,7 @@
 
 # [START eventarc_gcs_server]
 import os
+import sys
 
 from flask import Flask, request
 import json
@@ -27,77 +28,43 @@ app = Flask(__name__)
 @app.route('/', methods=['POST'])
 def index():
 
-    entry = dict(
-        severity="NOTICE",
-        message="Insert statement detected - running initial checks",
-        # Log viewer accesses 'component' as jsonPayload.component'.
-        component="cloud-run-job-start"
-    )
-    print(json.dumps(entry))
+    sys.stdout.write('Insert statement detected - running initial checks')
 
     # Gets the Payload data from the Audit Log
     content = request.json
     try:
 
-        entry = dict(
-            severity="NOTICE",
-            message="Checking metadata...",
-            # Log viewer accesses 'component' as jsonPayload.component'.
-            component="get-logging-metadata"
-        )
-        print(json.dumps(entry))
+        sys.stdout.write('Checking metadata...')
 
         ds = content['resource']['labels']['dataset_id']
         tbl = content['protoPayload']['resourceName']
         rows = int(content['protoPayload']['metadata']['tableDataChange']['insertedRowsCount'])
         if ds == 'dataform' and tbl.endswith('tables/ad_and_ingest_metadata') and rows > 0:
             # Run assessment on metadata object in BigQuery
-            
-            entry = dict(
-                severity="NOTICE",
-                message="Metadata successfully meets criteria. Running assessment...",
-                # Log viewer accesses 'component' as jsonPayload.component'.
-                component="run-assessment"
-            )
-            print(json.dumps(entry))
+
+            sys.stdout.write('Metadata successfully meets criteria. Running assessment...')
 
             assessment = assess_ingest_tables()
             # Identify DAG to trigger using rules engine
             
-            entry = dict(
-                severity="NOTICE",
-                message="Assessment completed. Writing to BigQuery...",
-                # Log viewer accesses 'component' as jsonPayload.component'.
-                component="write-to-bq"
-            )
-            print(json.dumps(entry))
+            sys.stdout.write('Assessment completed. Checking Rules Engine...')
 
             dag_to_trigger = rules_engine(assessment)
             if dag_to_trigger:
+                sys.stdout.write('Assessment complete - triggering dag')
                 return "assessment complete - triggering dag", 200
             else:
+                sys.stdout.write('No DAG to trigger')
                 return "no DAG to trigger", 200
     except:
         # if these fields are not in the JSON, ignore
-        entry = dict(
-            severity="NOTICE",
-            message="Metadata does not meet criteria. Stopping...",
-            # Log viewer accesses 'component' as jsonPayload.component'.
-            component="false-alarm"
-        )
-        print(json.dumps(entry))
+        sys.stdout.write('Metadata does not meet criteria. Stopping...')
         pass
     return "ok", 200
 # [END eventarc_gcs_handler]
 
 def assess_ingest_tables():
-    entry = dict(
-        severity="NOTICE",
-        message="Running query to pull ingestion table data...",
-        # Log viewer accesses 'component' as jsonPayload.component'.
-        component="bq-select-statement"
-    )
-    print(json.dumps(entry))
+    sys.stdout.write('Running query to pull ingestion table data...')
 
     client = bigquery.Client()
     query = """
@@ -115,7 +82,8 @@ WHERE STATUS = "SUCCESS" AND EXTRACT(DATE FROM LOAD_DATE) = EXTRACT(DATE FROM CU
 
 def rules_engine(query_results):
     client = bigquery.Client()
-    # initialize a record (might not be the cleanest way to do this??)
+    # initialize a record
+    sys.stdout.write('Initializing current data...')
     src_table_1 = False
     src_table_2 = False
     src_table_3 = False
@@ -128,6 +96,7 @@ def rules_engine(query_results):
     sales = False
 
     # create assessment
+    sys.stdout.write('Applying rules...')
     for row in query_results:
         if row[1] == 'src_table_1' and row[2] == 'SUCCESS':
             src_table_1 = True
@@ -149,7 +118,7 @@ def rules_engine(query_results):
             sales = True
 
     # trigger DAG from rules:
-
+    sys.stdout.write('Selecting DAG to trigger...')
     # 1. retail account - depends on:
     #   src_table_1
     #   src_table_2
