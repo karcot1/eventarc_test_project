@@ -28,13 +28,25 @@ app = Flask(__name__)
 @app.route('/', methods=['POST'])
 def index():
 
-    sys.stdout.write('Insert statement detected - running initial checks')
+    entry = dict(
+        severity="NOTICE",
+        message="Insert statement detected - running initial checks",
+        # Log viewer accesses 'component' as jsonPayload.component'.
+        component="cloud-run-job-start"
+    )
+    print(json.dumps(entry))
 
     # Gets the Payload data from the Audit Log
     content = request.json
     try:
 
-        sys.stdout.write('Checking metadata...')
+        entry = dict(
+            severity="NOTICE",
+            message="Checking metadata...",
+            # Log viewer accesses 'component' as jsonPayload.component'.
+            component="get-logging-metadata"
+        )
+        print(json.dumps(entry))
 
         ds = content['resource']['labels']['dataset_id']
         tbl = content['protoPayload']['resourceName']
@@ -42,29 +54,67 @@ def index():
         if ds == 'dataform' and tbl.endswith('tables/ad_and_ingest_metadata') and rows > 0:
             # Run assessment on metadata object in BigQuery
 
-            sys.stdout.write('Metadata successfully meets criteria. Running assessment...')
+            entry = dict(
+                severity="NOTICE",
+                message="Metadata successfully meets criteria. Running assessment...",
+                # Log viewer accesses 'component' as jsonPayload.component'.
+                component="run-assessment"
+            )
+            print(json.dumps(entry))
 
             assessment = assess_ingest_tables()
             # Identify DAG to trigger using rules engine
             
-            sys.stdout.write('Assessment completed. Checking Rules Engine...')
+            entry = dict(
+                severity="NOTICE",
+                message="Assessment completed. Checking Rules Engine...",
+                # Log viewer accesses 'component' as jsonPayload.component'.
+                component="check-rules"
+            )
+            print(json.dumps(entry))
 
             dag_to_trigger = rules_engine(assessment)
             if dag_to_trigger:
-                sys.stdout.write('Assessment complete - triggering dag')
+                entry = dict(
+                    severity="NOTICE",
+                    message="Assessment completed. Triggering {}...".format(dag_to_trigger),
+                    # Log viewer accesses 'component' as jsonPayload.component'.
+                    component="trigger-dag"
+                )
+                print(json.dumps(entry))
                 return "assessment complete - triggering dag", 200
             else:
-                sys.stdout.write('No DAG to trigger')
+                entry = dict(
+                    severity="NOTICE",
+                    message="Assessment completed. No DAG to trigger.",
+                    # Log viewer accesses 'component' as jsonPayload.component'.
+                    component="no-dag"
+                )
+                print(json.dumps(entry))
                 return "no DAG to trigger", 200
     except:
         # if these fields are not in the JSON, ignore
-        sys.stdout.write('Metadata does not meet criteria. Stopping...')
+        entry = dict(
+            severity="NOTICE",
+            message="Metadata does not meet criteria. Stopping...",
+            # Log viewer accesses 'component' as jsonPayload.component'.
+            component="wrong-log"
+        )
+        print(json.dumps(entry))
+
         pass
     return "ok", 200
 # [END eventarc_gcs_handler]
 
 def assess_ingest_tables():
-    sys.stdout.write('Running query to pull ingestion table data...')
+
+    entry = dict(
+        severity="NOTICE",
+        message="Running query to pull ingestion table data...",
+        # Log viewer accesses 'component' as jsonPayload.component'.
+        component="pull-ingest-data"
+    )
+    print(json.dumps(entry))
 
     client = bigquery.Client()
     query = """
@@ -83,7 +133,15 @@ WHERE STATUS = "SUCCESS" AND EXTRACT(DATE FROM LOAD_DATE) = EXTRACT(DATE FROM CU
 def rules_engine(query_results):
     client = bigquery.Client()
     # initialize a record
-    sys.stdout.write('Initializing current data...')
+
+    entry = dict(
+        severity="NOTICE",
+        message="Initiailizing current data...",
+        # Log viewer accesses 'component' as jsonPayload.component'.
+        component="initialize-data"
+    )
+    print(json.dumps(entry))
+
     src_table_1 = False
     src_table_2 = False
     src_table_3 = False
@@ -94,6 +152,8 @@ def rules_engine(query_results):
     retail_account = False
     customer = False
     sales = False
+
+    dag_to_invoke = None
 
     # create assessment
     sys.stdout.write('Applying rules...')
@@ -118,7 +178,15 @@ def rules_engine(query_results):
             sales = True
 
     # trigger DAG from rules:
-    sys.stdout.write('Selecting DAG to trigger...')
+
+    entry = dict(
+        severity="NOTICE",
+        message="Selecting DAG to invoke...",
+        # Log viewer accesses 'component' as jsonPayload.component'.
+        component="invoke-dag"
+    )
+    print(json.dumps(entry))
+
     # 1. retail account - depends on:
     #   src_table_1
     #   src_table_2
@@ -128,6 +196,7 @@ def rules_engine(query_results):
         INSERT INTO dataform.dag_invocations
         VALUES('retail_account', CURRENT_TIMESTAMP())
             """
+        dag_to_invoke = 'retail_account'
     # 2. customer - depends on:
     #   retail_account
     #   src_table_4
@@ -137,6 +206,7 @@ def rules_engine(query_results):
         INSERT INTO dataform.dag_invocations
         VALUES('customer', CURRENT_TIMESTAMP())
             """
+        dag_to_invoke = 'customer'
     # 3. sales - depends on:
     #   retail_account
     #   customer
@@ -146,13 +216,14 @@ def rules_engine(query_results):
         INSERT INTO dataform.dag_invocations
         VALUES('sales', CURRENT_TIMESTAMP())
             """
+        dag_to_invoke = 'sales'
     else:
         query = """
         INSERT INTO dataform.dag_invocations
         VALUES('none', CURRENT_TIMESTAMP())
             """
     client.query(query)
-    return query
+    return dag_to_invoke
 
 # [START eventarc_gcs_server]
 if __name__ == "__main__":
