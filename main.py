@@ -69,6 +69,13 @@ def index():
             if dag_to_trigger:
                 return "assessment complete - triggering dag", 200
             else:
+                entry = dict(
+                    severity="NOTICE",
+                    message="Metadata does not meet criteria. Stopping...",
+                    # Log viewer accesses 'component' as jsonPayload.component'.
+                    component="false-alarm"
+                )
+                print(json.dumps(entry))
                 return "assessment complete - criteria not met for any DAG", 200
     except:
         # if these fields are not in the JSON, ignore
@@ -87,16 +94,16 @@ def assess_ingest_tables():
 
     client = bigquery.Client()
     query = """
-        SELECT
-            INGEST_CD,
-            OBJECT,
-            STATUS,
-            LOAD_DATE
-        FROM dataform.ad_and_ingest_metadata
-        WHERE EXTRACT(DATE FROM LOAD_DATE) >= EXTRACT(DATE FROM CURRENT_TIMESTAMP())-1
-        """
+SELECT
+    INGEST_CD,
+    OBJECT,
+    STATUS,
+    LOAD_DATE
+FROM dataform.ad_and_ingest_metadata
+WHERE EXTRACT(DATE FROM LOAD_DATE) >= EXTRACT(DATE FROM CURRENT_TIMESTAMP())-1
+    """
     job = client.query(query)
-    results = job.results()
+    results = job.result()
     results_str = ' '.join(results)
     entry = dict(
         severity="NOTICE",
