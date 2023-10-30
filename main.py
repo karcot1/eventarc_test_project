@@ -15,6 +15,7 @@
 # [START eventarc_gcs_server]
 import os
 import sys
+import requests
 
 from flask import Flask, request
 import json
@@ -82,6 +83,16 @@ def index():
                     component="trigger-dag"
                 )
                 print(json.dumps(entry))
+                headers = {
+                    'accept': 'application/json',
+                    'Content-Type': 'application/json',
+                }
+
+                json_data = {
+                    'dag_run_id': 'test-from-eventarc-workflow',
+                }
+
+                response = requests.post('https://1e4c3db3869341d28887913a748d960c-dot-us-central1.composer.googleusercontent.com/api/v1/dags/example-event-trigger/dagRuns', headers=headers, json=json_data)
                 return "assessment complete - triggering dag", 200
             else:
                 entry = dict(
@@ -103,6 +114,13 @@ def index():
         print(json.dumps(entry))
 
         pass
+    entry = dict(
+        severity="NOTICE",
+        message="DONE.",
+        # Log viewer accesses 'component' as jsonPayload.component'.
+        component="done"
+    )
+    print(json.dumps(entry))
     return "ok", 200
 # [END eventarc_gcs_handler]
 
