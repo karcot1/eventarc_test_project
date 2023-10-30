@@ -13,22 +13,31 @@
 # limitations under the License.
 
 # [START eventarc_gcs_server]
+from __future__ import annotations
+
+from typing import Any
 import os
 import sys
+
+import google.auth
+from google.auth.transport.requests import AuthorizedSession
 import requests
 
 from flask import Flask, request
 import json
 from google.cloud import bigquery
 
+
 app = Flask(__name__)
 # [END eventarc_gcs_server]
 
+AUTH_SCOPE = "https://www.googleapis.com/auth/cloud-platform"
+CREDENTIALS, _ = google.auth.default(scopes=[AUTH_SCOPE])
 
 # [START eventarc_gcs_handler]
 @app.route('/', methods=['POST'])
 def index():
-
+    
     entry = dict(
         severity="NOTICE",
         message="Insert statement detected - running initial checks",
@@ -83,17 +92,34 @@ def index():
                     component="trigger-dag"
                 )
                 print(json.dumps(entry))
-                headers = {
-                    'accept': 'application/json',
-                    'Content-Type': 'application/json',
-                }
+                # headers = {
+                #     'accept': 'application/json',
+                #     'Content-Type': 'application/json',
+                # }
 
-                json_data = {
-                    'dag_run_id': 'test-from-eventarc-workflow',
-                }
+                # json_data = {
+                #     'dag_run_id': 'test-from-eventarc-workflow',
+                # }
 
-                response = requests.post('https://1e4c3db3869341d28887913a748d960c-dot-us-central1.composer.googleusercontent.com/api/v1/dags/example-event-trigger/dagRuns', headers=headers, json=json_data)
-                return "assessment complete - triggering dag", 200
+                # response = requests.post('https://1e4c3db3869341d28887913a748d960c-dot-us-central1.composer.googleusercontent.com/api/v1/dags/example-event-trigger/dagRuns', headers=headers, json=json_data)
+                dag_id = "example-event-trigger"  # Replace with the ID of the DAG that you want to run.
+                # dag_config = {
+                #     "your-key": "your-value"
+                # }  # Replace with configuration parameters for the DAG run.
+                # Replace web_server_url with the Airflow web server address. To obtain this
+                # URL, run the following command for your environment:
+                # gcloud composer environments describe example-environment \
+                #  --location=your-composer-region \
+                #  --format="value(config.airflowUri)"
+                web_server_url = (
+                    "https://1e4c3db3869341d28887913a748d960c-dot-us-central1.composer.googleusercontent.com"
+                )
+
+                response_text = trigger_dag(
+                    web_server_url=web_server_url, dag_id=dag_id
+                )
+                print(response_text)
+                return "DAG successfully triggered", 200
             else:
                 entry = dict(
                     severity="NOTICE",
@@ -250,6 +276,59 @@ def rules_engine(query_results):
             """
     client.query(query)
     return dag_to_invoke
+
+def make_composer2_web_server_request(
+    url: str, method: str = "GET", **kwargs: Any
+) -> google.auth.transport.Response:
+    """
+    Make a request to Cloud Composer 2 environment's web server.
+    Args:
+      url: The URL to fetch.
+      method: The request method to use ('GET', 'OPTIONS', 'HEAD', 'POST', 'PUT',
+        'PATCH', 'DELETE')
+      **kwargs: Any of the parameters defined for the request function:
+                https://github.com/requests/requests/blob/master/requests/api.py
+                  If no timeout is provided, it is set to 90 by default.
+    """
+
+    authed_session = AuthorizedSession(CREDENTIALS)
+
+    # Set the default timeout, if missing
+    if "timeout" not in kwargs:
+        kwargs["timeout"] = 90
+
+    return authed_session.request(method, url, **kwargs)
+
+
+def trigger_dag(web_server_url: str, dag_id: str, data: dict) -> str:
+    """
+    Make a request to trigger a dag using the stable Airflow 2 REST API.
+    https://airflow.apache.org/docs/apache-airflow/stable/stable-rest-api-ref.html
+
+    Args:
+      web_server_url: The URL of the Airflow 2 web server.
+      dag_id: The DAG ID.
+      data: Additional configuration parameters for the DAG run (json).
+    """
+
+    endpoint = f"api/v1/dags/{dag_id}/dagRuns"
+    request_url = f"{web_server_url}/{endpoint}"
+    json_data = {"conf": data}
+
+    response = make_composer2_web_server_request(
+        request_url, method="POST", json=json_data
+    )
+
+    if response.status_code == 403:
+        raise requests.HTTPError(
+            "You do not have a permission to perform this operation. "
+            "Check Airflow RBAC roles for your account."
+            f"{response.headers} / {response.text}"
+        )
+    elif response.status_code != 200:
+        response.raise_for_status()
+    else:
+        return response.text
 
 # [START eventarc_gcs_server]
 if __name__ == "__main__":
