@@ -60,11 +60,12 @@ def index():
             # Identify DAG to trigger using rules engine
             entry = dict(
                 severity="NOTICE",
-                message="Writing to BigQuery",
+                message="Assessment completel. Writing to BigQuery...",
                 # Log viewer accesses 'component' as jsonPayload.component'.
                 component="write-to-bq"
             )
             print(json.dumps(entry))
+
             dag_to_trigger = rules_engine(assessment)
             if dag_to_trigger:
                 return "assessment complete - triggering dag", 200
@@ -94,19 +95,17 @@ def assess_ingest_tables():
 
     client = bigquery.Client()
     query = """
-INSERT INTO dataform.dag_invocations VALUES ('test',CURRENT_TIMESTAMP())
+SELECT
+    INGEST_CD,
+    OBJECT,
+    STATUS,
+    LOAD_DATE
+FROM dataform.ad_and_ingest_metadata
+WHERE STATUS = "SUCCESS" AND EXTRACT(DATE FROM LOAD_DATE) >= EXTRACT(DATE FROM CURRENT_TIMESTAMP())-1
     """
-    client.query(query)
-    return(query)
-#     query = """
-# SELECT
-#     INGEST_CD,
-#     OBJECT,
-#     STATUS,
-#     LOAD_DATE
-# FROM dataform.ad_and_ingest_metadata
-# WHERE STATUS = "SUCCESS" AND EXTRACT(DATE FROM LOAD_DATE) >= EXTRACT(DATE FROM CURRENT_TIMESTAMP())-1
-#     """
+    results = client.query(query)
+    print(results)
+    return results
 #     job = client.query(query)
 #     results = job.result()
 #     results_str = ' '.join(results)
