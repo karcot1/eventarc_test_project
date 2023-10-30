@@ -7,7 +7,7 @@ REGION="us-central1"
 PROJECT_NO=$(gcloud projects list --filter="$PROJECT" --format="value(PROJECT_NUMBER)")
 SVC_ACCOUNT="${PROJECT_NO}-compute@developer.gserviceaccount.com"
 
-# Build docker image and deploy it to Cloud Run
+# Build docker image and deploy it to Cloud Run (Not needed if connecting the service via GitHub)
 gcloud builds submit --tag ${CONTAINER}
 gcloud run deploy ${SERVICE} --image $CONTAINER --platform managed
 
