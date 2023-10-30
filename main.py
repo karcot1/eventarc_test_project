@@ -28,7 +28,7 @@ app = Flask(__name__)
 def index():
     entry = dict(
         severity="NOTICE",
-        message="Starting cloud run application yay.",
+        message="Insert statement detected - running initial checks",
         # Log viewer accesses 'component' as jsonPayload.component'.
         component="cloud-run-job-start"
     )
@@ -38,7 +38,7 @@ def index():
     try:
         entry = dict(
             severity="NOTICE",
-            message="Trying to get log metadata",
+            message="Checking metadata...",
             # Log viewer accesses 'component' as jsonPayload.component'.
             component="get-logging-metadata"
         )
@@ -51,7 +51,7 @@ def index():
             # Run assessment on metadata object in BigQuery
             entry = dict(
                 severity="NOTICE",
-                message="Running assessment",
+                message="Metadata successfully meets criteria. Running assessment...",
                 # Log viewer accesses 'component' as jsonPayload.component'.
                 component="run-assessment"
             )
@@ -77,6 +77,14 @@ def index():
 # [END eventarc_gcs_handler]
 
 def assess_ingest_tables():
+    entry = dict(
+        severity="NOTICE",
+        message="Running query to pull ingestion table data...",
+        # Log viewer accesses 'component' as jsonPayload.component'.
+        component="bq-select-statement"
+    )
+    print(json.dumps(entry))
+
     client = bigquery.Client()
     query = """
         SELECT
@@ -87,7 +95,18 @@ def assess_ingest_tables():
         FROM dataform.ad_and_ingest_metadata
         WHERE EXTRACT(DATE FROM LOAD_DATE) >= EXTRACT(DATE FROM CURRENT_TIMESTAMP())-1
         """
-    return client.query(query).results()
+    job = client.query(query)
+    results = job.results()
+    results_str = ' '.join(results)
+    entry = dict(
+        severity="NOTICE",
+        message=results_str,
+        # Log viewer accesses 'component' as jsonPayload.component'.
+        component="bq-output"
+    )
+    print(json.dumps(entry))
+
+    return results
  
 
 def rules_engine(query_results):
