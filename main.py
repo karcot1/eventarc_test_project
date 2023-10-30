@@ -20,25 +20,51 @@ import json
 from google.cloud import bigquery
 
 app = Flask(__name__)
-
-
 # [END eventarc_gcs_server]
 
 
 # [START eventarc_gcs_handler]
 @app.route('/', methods=['POST'])
 def index():
+    entry = dict(
+        severity="NOTICE",
+        message="Starting cloud run application yay.",
+        # Log viewer accesses 'component' as jsonPayload.component'.
+        component="cloud-run-job-start"
+    )
+    print(json.dumps(entry))
     # Gets the Payload data from the Audit Log
     content = request.json
     try:
+        entry = dict(
+            severity="NOTICE",
+            message="Trying to get log metadata",
+            # Log viewer accesses 'component' as jsonPayload.component'.
+            component="get-logging-metadata"
+        )
+        print(json.dumps(entry))
         print(content)
         ds = content['resource']['labels']['dataset_id']
         tbl = content['protoPayload']['resourceName']
         rows = int(content['protoPayload']['metadata']['tableDataChange']['insertedRowsCount'])
         if ds == 'dataform' and tbl.endswith('tables/ad_and_ingest_metadata') and rows > 0:
             # Run assessment on metadata object in BigQuery
+            entry = dict(
+                severity="NOTICE",
+                message="Running assessment",
+                # Log viewer accesses 'component' as jsonPayload.component'.
+                component="run-assessment"
+            )
+            print(json.dumps(entry))
             assessment = assess_ingest_tables()
             # Identify DAG to trigger using rules engine
+            entry = dict(
+                severity="NOTICE",
+                message="Writing to BigQuery",
+                # Log viewer accesses 'component' as jsonPayload.component'.
+                component="write-to-bq"
+            )
+            print(json.dumps(entry))
             dag_to_trigger = rules_engine(assessment)
             if dag_to_trigger:
                 return "assessment complete - triggering dag", 200
@@ -53,18 +79,16 @@ def index():
 def assess_ingest_tables():
     client = bigquery.Client()
     query = """
-SELECT
-    INGEST_CD,
-    OBJECT,
-    STATUS,
-    LOAD_DATE
-FROM dataform.ad_and_ingest_metadata
-WHERE LOAD_DATE >= EXTRACT(DATE FROM CURRENT_TIMESTAMP())-1
-    """
-    job = client.query(query)
-    results = job.results()
-
-    return results
+        SELECT
+            INGEST_CD,
+            OBJECT,
+            STATUS,
+            LOAD_DATE
+        FROM dataform.ad_and_ingest_metadata
+        WHERE EXTRACT(DATE FROM LOAD_DATE) >= EXTRACT(DATE FROM CURRENT_TIMESTAMP())-1
+        """
+    return client.query(query).results()
+ 
 
 def rules_engine(query_results):
     client = bigquery.Client()
@@ -108,7 +132,6 @@ def rules_engine(query_results):
     #   src_table_2
     #   src_table_3
     if src_table_1 and src_table_2 and src_table_3 and not retail_account:
-        client = bigquery.Client()
         query = """
         INSERT INTO dataform.dag_invocations
         VALUES('retail_account', CURRENT_TIMESTAMP())
