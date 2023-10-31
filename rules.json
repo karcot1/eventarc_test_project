@@ -1,0 +1,13 @@
+{
+    "retail_account":[
+        "src_table_1",
+        "src_table_2",
+        "src_table_3"],
+    "customer": [
+        "retail_account",
+        "src_table_4",
+        "src_table_5"],
+    "sales": [
+        "customer",
+        "src_table_6"]
+}
