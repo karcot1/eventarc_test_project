@@ -108,7 +108,6 @@ def rules_engine(assessment):
     try: 
         f = open('rules.json')
         rules = json.load(f)
-        print(rules)
 
     except Exception as e:
         print("Unable to read JSON file: ",e)
@@ -121,6 +120,7 @@ def rules_engine(assessment):
         if set(dependencies).issubset(set(assessment)) and analytical_domain not in assessment:
             dag_to_invoke = analytical_domain
             break
+        
     # Insert to dag_invocation table to log triggering of AD build
     query = f"""
 INSERT INTO dataform.dag_invocations
