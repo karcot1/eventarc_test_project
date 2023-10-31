@@ -135,16 +135,18 @@ def rules_engine(assessment):
     print("Triggering DAG: " + analytical_domain)
     # trigger DAG from rules:
 
-    query = """
+    query = f"""
 INSERT INTO dataform.dag_invocations
-VALUES({}, CURRENT_TIMESTAMP())
-    """.format(dag_to_invoke)
+VALUES({dag_to_invoke}, CURRENT_TIMESTAMP())
+    """
+
+    print("Running query: ", query)
 
     try:
         client.query(query)
     except Exception as e:
         print('Unable to execute query: ', e)
-        
+
     return dag_to_invoke
 
 # [START eventarc_gcs_server]
