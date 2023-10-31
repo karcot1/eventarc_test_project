@@ -115,13 +115,9 @@ def rules_engine(assessment):
     client = bigquery.Client()
     f = open('rules.json')
     rules = json.load(f)
-
+    print("Rules: " + rules)
+    
     dag_to_invoke = 'None'
-
-    query = """
-        INSERT INTO dataform.dag_invocations
-        VALUES({}, CURRENT_TIMESTAMP())
-            """.format(dag_to_invoke)
     
     entry = dict( severity="NOTICE", message="Applying rules...", component="apply-rules" )
     print(json.dumps(entry))
@@ -130,7 +126,13 @@ def rules_engine(assessment):
         if set(dependencies).issubset(set(assessment)) and analytical_domain not in assessment:
             dag_to_invoke = analytical_domain
 
+    print("Triggering DAG: " + analytical_domain)
     # trigger DAG from rules:
+    query = """
+INSERT INTO dataform.dag_invocations
+VALUES({}, CURRENT_TIMESTAMP())
+    """.format(dag_to_invoke)
+
     client.query(query)
     return dag_to_invoke
 
