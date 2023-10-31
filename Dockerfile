@@ -22,12 +22,13 @@ FROM python:3.9-slim
 ENV PYTHONUNBUFFERED True
 
 # Install production dependencies.
-RUN pip install Werkzeug==2.2.2 Flask==2.2.2 gunicorn==20.0.4 google-cloud-bigquery
+RUN pip install Flask==2.2.2 gunicorn==20.0.4 google-cloud-bigquery
 
 # Copy local code to the container image.
 ENV APP_HOME /app
 WORKDIR $APP_HOME
-COPY *.py ./
+COPY main.py ./
+COPY rules.json ./
 
 # Run the web service on container startup. 
 # Use gunicorn webserver with one worker process and 8 threads.
