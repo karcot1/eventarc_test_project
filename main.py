@@ -125,7 +125,7 @@ def rules_engine(assessment):
     # Insert to dag_invocation table to log triggering of AD build
     query = f"""
 INSERT INTO dataform.dag_invocations
-VALUES({dag_to_invoke}, CURRENT_TIMESTAMP())
+VALUES('{dag_to_invoke}', CURRENT_TIMESTAMP())
     """
 
     print("Running query: ", query)
