@@ -13,107 +13,85 @@
 # limitations under the License.
 
 # [START eventarc_gcs_server]
+from __future__ import annotations
+
+from typing import Any
 import os
 import sys
+
+import google.auth
+from google.auth.transport.requests import AuthorizedSession
+import requests
 
 from flask import Flask, request
 import json
 from google.cloud import bigquery
 
+
 app = Flask(__name__)
 # [END eventarc_gcs_server]
 
+AUTH_SCOPE = "https://www.googleapis.com/auth/cloud-platform"
+CREDENTIALS, _ = google.auth.default(scopes=[AUTH_SCOPE])
 
 # [START eventarc_gcs_handler]
 @app.route('/', methods=['POST'])
 def index():
-
-    entry = dict(
-        severity="NOTICE",
-        message="Insert statement detected - running initial checks",
-        # Log viewer accesses 'component' as jsonPayload.component'.
-        component="cloud-run-job-start"
-    )
+    
+    # Log entry: insert statement detected
+    entry = dict(severity="NOTICE", message="Insert statement detected - running initial checks", component="cloud-run-job-start" )
     print(json.dumps(entry))
 
     # Gets the Payload data from the Audit Log
     content = request.json
     try:
 
-        entry = dict(
-            severity="NOTICE",
-            message="Checking metadata...",
-            # Log viewer accesses 'component' as jsonPayload.component'.
-            component="get-logging-metadata"
-        )
+        # Log entry: checking metadata
+        entry = dict( severity="NOTICE", message="Checking metadata...", component="get-logging-metadata" )
         print(json.dumps(entry))
 
         ds = content['resource']['labels']['dataset_id']
         tbl = content['protoPayload']['resourceName']
         rows = int(content['protoPayload']['metadata']['tableDataChange']['insertedRowsCount'])
+        
         if ds == 'dataform' and tbl.endswith('tables/ad_and_ingest_metadata') and rows > 0:
-            # Run assessment on metadata object in BigQuery
-
-            entry = dict(
-                severity="NOTICE",
-                message="Metadata successfully meets criteria. Running assessment...",
-                # Log viewer accesses 'component' as jsonPayload.component'.
-                component="run-assessment"
-            )
+            # Metadata passes
+            entry = dict( severity="NOTICE", message="Metadata successfully meets criteria. Running assessment...", component="run-assessment" )
             print(json.dumps(entry))
 
+            # Run assessment on metadata object in BigQuery
             assessment = assess_ingest_tables()
-            # Identify DAG to trigger using rules engine
             
-            entry = dict(
-                severity="NOTICE",
-                message="Assessment completed. Checking Rules Engine...",
-                # Log viewer accesses 'component' as jsonPayload.component'.
-                component="check-rules"
-            )
+            #Identify DAG to trigger using rules engine
+            entry = dict( severity="NOTICE", message="Assessment completed. Checking Rules Engine...", component="check-rules" )
             print(json.dumps(entry))
 
             dag_to_trigger = rules_engine(assessment)
             if dag_to_trigger:
-                entry = dict(
-                    severity="NOTICE",
-                    message="Assessment completed. Triggering {}...".format(dag_to_trigger),
-                    # Log viewer accesses 'component' as jsonPayload.component'.
-                    component="trigger-dag"
-                )
+
+                # Trigger DAG
+                entry = dict( severity="NOTICE", message="Rules applied. Triggering {}...".format(dag_to_trigger), component="trigger-dag" )
                 print(json.dumps(entry))
-                return "assessment complete - triggering dag", 200
+
+                #TODO: Trigger DAG
+                return "DAG successfully triggered", 200
             else:
-                entry = dict(
-                    severity="NOTICE",
-                    message="Assessment completed. No DAG to trigger.",
-                    # Log viewer accesses 'component' as jsonPayload.component'.
-                    component="no-dag"
-                )
+                entry = dict( severity="NOTICE", message="Assessment completed. No DAG to trigger.", component="no-dag" )
                 print(json.dumps(entry))
                 return "no DAG to trigger", 200
     except:
         # if these fields are not in the JSON, ignore
-        entry = dict(
-            severity="NOTICE",
-            message="Metadata does not meet criteria. Stopping...",
-            # Log viewer accesses 'component' as jsonPayload.component'.
-            component="wrong-log"
-        )
+        entry = dict( severity="NOTICE", message="Metadata does not meet criteria. Stopping...", component="wrong-log" )
         print(json.dumps(entry))
-
         pass
+    entry = dict( severity="NOTICE", message="DONE.", component="done" )
+    print(json.dumps(entry))
     return "ok", 200
 # [END eventarc_gcs_handler]
 
 def assess_ingest_tables():
 
-    entry = dict(
-        severity="NOTICE",
-        message="Running query to pull ingestion table data...",
-        # Log viewer accesses 'component' as jsonPayload.component'.
-        component="pull-ingest-data"
-    )
+    entry = dict( severity="NOTICE", message="Running query to pull ingestion table data...", component="pull-ingest-data" )
     print(json.dumps(entry))
 
     client = bigquery.Client()
@@ -127,109 +105,30 @@ FROM dataform.ad_and_ingest_metadata
 WHERE STATUS = "SUCCESS" AND EXTRACT(DATE FROM LOAD_DATE) = EXTRACT(DATE FROM CURRENT_TIMESTAMP())
     """
     results = client.query(query)
-    return results
+    assessment = [[row[i] for row in results] for i in range(len(results[0]))][1]
+    return assessment
  
 
-def rules_engine(query_results):
+def rules_engine(assessment):
     client = bigquery.Client()
-    # initialize a record
+    f = open('rules.json')
+    rules = json.load(f)
 
-    entry = dict(
-        severity="NOTICE",
-        message="Initiailizing current data...",
-        # Log viewer accesses 'component' as jsonPayload.component'.
-        component="initialize-data"
-    )
-    print(json.dumps(entry))
+    dag_to_invoke = 'None'
 
-    src_table_1 = False
-    src_table_2 = False
-    src_table_3 = False
-    src_table_4 = False
-    src_table_5 = False
-    src_table_6 = False
-
-    retail_account = False
-    customer = False
-    sales = False
-
-    dag_to_invoke = None
-
-    # create assessment
-
-    entry = dict(
-        severity="NOTICE",
-        message="Applying rules...",
-        # Log viewer accesses 'component' as jsonPayload.component'.
-        component="apply-rules"
-    )
-    print(json.dumps(entry))
+    query = """
+        INSERT INTO dataform.dag_invocations
+        VALUES({}, CURRENT_TIMESTAMP())
+            """.format(dag_to_invoke)
     
-    for row in query_results:
-        if row[1] == 'src_table_1' and row[2] == 'SUCCESS':
-            src_table_1 = True
-        if row[1] == 'src_table_2' and row[2] == 'SUCCESS':
-            src_table_2 = True
-        if row[1] == 'src_table_3' and row[2] == 'SUCCESS':
-            src_table_3 = True
-        if row[1] == 'src_table_4' and row[2] == 'SUCCESS':
-            src_table_4 = True
-        if row[1] == 'src_table_5' and row[2] == 'SUCCESS':
-            src_table_5 = True
-        if row[1] == 'src_table_6' and row[2] == 'SUCCESS':
-            src_table_6 = True
-        if row[1] == 'retail_account' and row[2] == 'SUCCESS':
-            retail_account = True
-        if row[1] == 'customer' and row[2] == 'SUCCESS':
-            customer = True
-        if row[1] == 'sales' and row[2] == 'SUCCESS':
-            sales = True
+    entry = dict( severity="NOTICE", message="Applying rules...", component="apply-rules" )
+    print(json.dumps(entry))
+
+    for analytical_domain, dependencies in rules.items():
+        if set(dependencies).issubset(set(assessment)) and analytical_domain not in assessment:
+            dag_to_invoke = analytical_domain
 
     # trigger DAG from rules:
-
-    entry = dict(
-        severity="NOTICE",
-        message="Selecting DAG to invoke...",
-        # Log viewer accesses 'component' as jsonPayload.component'.
-        component="invoke-dag"
-    )
-    print(json.dumps(entry))
-
-    # 1. retail account - depends on:
-    #   src_table_1
-    #   src_table_2
-    #   src_table_3
-    if src_table_1 and src_table_2 and src_table_3 and not retail_account:
-        query = """
-        INSERT INTO dataform.dag_invocations
-        VALUES('retail_account', CURRENT_TIMESTAMP())
-            """
-        dag_to_invoke = 'retail_account'
-    # 2. customer - depends on:
-    #   retail_account
-    #   src_table_4
-    #   src_table_5
-    elif retail_account and src_table_4 and src_table_5 and not customer:
-        query = """
-        INSERT INTO dataform.dag_invocations
-        VALUES('customer', CURRENT_TIMESTAMP())
-            """
-        dag_to_invoke = 'customer'
-    # 3. sales - depends on:
-    #   retail_account
-    #   customer
-    #   src_table_6
-    elif retail_account and customer and src_table_6 and not sales:
-        query = """
-        INSERT INTO dataform.dag_invocations
-        VALUES('sales', CURRENT_TIMESTAMP())
-            """
-        dag_to_invoke = 'sales'
-    else:
-        query = """
-        INSERT INTO dataform.dag_invocations
-        VALUES('none', CURRENT_TIMESTAMP())
-            """
     client.query(query)
     return dag_to_invoke
 
