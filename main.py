@@ -137,7 +137,7 @@ def rules_engine(assessment):
 
     query = f"""
 INSERT INTO dataform.dag_invocations
-VALUES({dag_to_invoke}, CURRENT_TIMESTAMP())
+VALUES('{dag_to_invoke}', CURRENT_TIMESTAMP())
     """
 
     print("Running query: ", query)
