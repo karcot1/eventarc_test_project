@@ -107,7 +107,7 @@ WHERE STATUS = "SUCCESS" AND EXTRACT(DATE FROM LOAD_DATE) = EXTRACT(DATE FROM CU
 
     results = client.query(query)
     assessment = [[row[i] for row in list(results)] for i in range(len(list(results)[0]))][1]
-    
+
     print(assessment)
     return assessment
  
@@ -118,7 +118,7 @@ def rules_engine(assessment):
     try: 
         f = open('rules.json')
         rules = json.load(f)
-        print("Rules: " + rules)
+
     except Exception as e:
         print('Unable to read JSON file: ', e)
 
@@ -130,15 +130,21 @@ def rules_engine(assessment):
     for analytical_domain, dependencies in rules.items():
         if set(dependencies).issubset(set(assessment)) and analytical_domain not in assessment:
             dag_to_invoke = analytical_domain
+            break
 
     print("Triggering DAG: " + analytical_domain)
     # trigger DAG from rules:
+
     query = """
 INSERT INTO dataform.dag_invocations
 VALUES({}, CURRENT_TIMESTAMP())
     """.format(dag_to_invoke)
 
-    client.query(query)
+    try:
+        client.query(query)
+    except Exception as e:
+        print('Unable to execute query: ', e)
+        
     return dag_to_invoke
 
 # [START eventarc_gcs_server]
