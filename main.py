@@ -113,10 +113,14 @@ WHERE STATUS = "SUCCESS" AND EXTRACT(DATE FROM LOAD_DATE) = EXTRACT(DATE FROM CU
 
 def rules_engine(assessment):
     client = bigquery.Client()
-    f = open('rules.json')
-    rules = json.load(f)
-    print("Rules: " + rules)
-    
+    print('Attempting to open rules file...')
+    try: 
+        f = open('rules.json')
+        rules = json.load(f)
+        print("Rules: " + rules)
+    except Exception as e:
+        print('Unable to read JSON file: ', e)
+
     dag_to_invoke = 'None'
     
     entry = dict( severity="NOTICE", message="Applying rules...", component="apply-rules" )
