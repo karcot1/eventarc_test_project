@@ -104,11 +104,13 @@ SELECT
 FROM dataform.ad_and_ingest_metadata
 WHERE STATUS = "SUCCESS" AND EXTRACT(DATE FROM LOAD_DATE) = EXTRACT(DATE FROM CURRENT_TIMESTAMP())
     """
-
-    results = client.query(query)
-    assessment = [[row[i] for row in list(results)] for i in range(len(list(results)[0]))][1]
-
-    print(assessment)
+    try:
+        results = client.query(query)
+        assessment = [[row[i] for row in list(results)] for i in range(len(list(results)[0]))][1]
+        print(assessment)
+    except Exception as e:
+        entry = dict( severity="ERROR", message="Unable to execute BigQuery Job: {}".format(e), component="assess-ingest-tables" )
+        print(json.dumps(entry))
     return assessment
  
 
@@ -118,9 +120,11 @@ def rules_engine(assessment):
     try: 
         f = open('rules.json')
         rules = json.load(f)
+        print(rules)
 
     except Exception as e:
-        print('Unable to read JSON file: ', e)
+        entry = dict( severity="ERROR", message="Unable to read JSON file: {}".format(e), component="rules-engine" )
+        print(json.dumps(entry))
 
     dag_to_invoke = 'None'
     
@@ -131,10 +135,7 @@ def rules_engine(assessment):
         if set(dependencies).issubset(set(assessment)) and analytical_domain not in assessment:
             dag_to_invoke = analytical_domain
             break
-
-    print("Triggering DAG: " + analytical_domain)
-    # trigger DAG from rules:
-
+    # Insert to dag_invocation table to log triggering of AD build
     query = f"""
 INSERT INTO dataform.dag_invocations
 VALUES('{dag_to_invoke}', CURRENT_TIMESTAMP())
@@ -145,7 +146,8 @@ VALUES('{dag_to_invoke}', CURRENT_TIMESTAMP())
     try:
         client.query(query)
     except Exception as e:
-        print('Unable to execute query: ', e)
+        entry = dict( severity="ERROR", message="Unable to execute BigQuery job: {}".format(e), component="rules-engine" )
+        print(json.dumps(entry))
 
     return dag_to_invoke
 
