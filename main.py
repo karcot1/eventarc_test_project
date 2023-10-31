@@ -104,9 +104,10 @@ SELECT
 FROM dataform.ad_and_ingest_metadata
 WHERE STATUS = "SUCCESS" AND EXTRACT(DATE FROM LOAD_DATE) = EXTRACT(DATE FROM CURRENT_TIMESTAMP())
     """
-    results = client.query(query)
-    print(results)
-    # assessment = [[row[i] for row in results] for i in range(len(results[0]))][1]
+    results = list(client.query(query))
+
+    assessment = [[row[i] for row in results] for i in range(len(results[0]))][1]
+    print(assessment)
     return assessment
  
 
