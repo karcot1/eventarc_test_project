@@ -63,8 +63,7 @@ def index():
             print("Assessment completed. Checking Rules Engine...")
 
             dag_to_trigger = rules_engine(assessment)
-            if dag_to_trigger:
-
+            if dag_to_trigger != "None":
                 # Trigger DAG
                 print("Rules applied. Triggering {}...".format(dag_to_trigger))
 
