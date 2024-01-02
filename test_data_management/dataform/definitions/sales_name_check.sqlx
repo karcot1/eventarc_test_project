@@ -1,0 +1,13 @@
+config {
+    type: "assertion",
+    tags: ["sales"]
+}
+
+select
+    CASE
+        WHEN "${dataform.projectConfig.vars.salesName}" = "sales" THEN "match"
+        ELSE "no match"
+    END as sales
+EXCEPT DISTINCT
+select
+    "no match" as sales

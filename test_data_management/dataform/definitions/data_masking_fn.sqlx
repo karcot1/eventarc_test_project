@@ -1,0 +1,14 @@
+config {
+    type: "operations",
+    tags: ["data_lake"],
+    dependencies: ["ddl"]
+}
+
+CREATE FUNCTION IF NOT EXISTS ${dataform.projectConfig.defaultSchema}.dynamic_masking(tbl STRING, col STRING, value ANY TYPE)
+RETURNS STRING AS (
+  CASE
+    WHEN (SELECT min(um.access_level) FROM ${dataform.projectConfig.defaultSchema}.sensitive_cols sc INNER JOIN ${dataform.projectConfig.defaultSchema}.user_metadata um ON um.user_id = SESSION_USER() WHERE table_id = tbl AND column_id = col GROUP BY sc.column_id, um.user_id) = 1 THEN TO_HEX(SHA256(value))
+    WHEN (SELECT min(um.access_level) FROM ${dataform.projectConfig.defaultSchema}.sensitive_cols sc INNER JOIN ${dataform.projectConfig.defaultSchema}.user_metadata um ON um.user_id = SESSION_USER() WHERE table_id = tbl AND column_id = col GROUP BY sc.column_id, um.user_id) = 0 THEN NULL
+    ELSE value
+END)
+;

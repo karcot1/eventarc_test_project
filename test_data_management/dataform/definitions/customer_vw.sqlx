@@ -1,0 +1,19 @@
+config {
+    type: "view",
+    name: dataform.projectConfig.vars.customerName,
+    schema: dataform.projectConfig.vars.testADSchema,
+    tags: ["customer"],
+    dependencies: "cust_name_check"
+}
+
+select
+    cust_dtl_vw.col,
+    cust_vw.col2,
+    cust_vw2.col3,
+    cust_dtl_vw.region
+from ${dataform.projectConfig.vars.z0015_cust_dtl_vw} cust_dtl_vw
+    inner join ${dataform.projectConfig.vars.z0014_cust_vw} cust_vw
+        on cust_dtl_vw.col = cust_vw.col
+    left join ${dataform.projectConfig.vars.z0710_cust_vw} cust_vw2
+        on cust_vw.col2 = cust_vw2.col2
+${dataform.projectConfig.vars.cust_where_clause}

@@ -1,0 +1,17 @@
+config {
+    type: "operations",
+    tags: ["data_lake"],
+    dependencies: ["ddl"]
+}
+
+-- MEDIUM: NEEDS AT LEAST ACCESS_LEVEL = 1 ELSE HASHED
+-- HIGH: NEEDS AT LEAST ACCESS_LEVEL = 2 ELSE NULL
+
+CREATE FUNCTION IF NOT EXISTS ${dataform.projectConfig.defaultSchema}.dynamic_masking(tbl STRING, col STRING, value ANY TYPE)
+RETURNS STRING AS (
+  CASE
+    WHEN (SELECT min(um.access_level) FROM dl_prod_dataset.policy_tags_export pte INNER JOIN dl_prod_dataset.user_metadata um ON um.user_id = SESSION_USER() WHERE pte.table = tbl AND pte.column = col AND pte.tag_id LIKE '%7257713510944033933' GROUP BY pte.column, um.user_id) < 1 THEN TO_HEX(SHA256(value))
+    WHEN (SELECT min(um.access_level) FROM dl_prod_dataset.policy_tags_export pte INNER JOIN dl_prod_dataset.user_metadata um ON um.user_id = SESSION_USER() WHERE pte.table = tbl AND pte.column = col AND pte.tag_id LIKE '%5856199489217991922' GROUP BY pte.column, um.user_id) < 2 THEN NULL
+    ELSE value
+END)
+;

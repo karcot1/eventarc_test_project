@@ -1,0 +1,8 @@
+{
+    "customerName": "customer",
+    "z0015_cust_dtl_vw": "dl_test_dataset.cust_test_vw_1",
+    "z0014_cust_vw": "dl_test_dataset.cust_test_vw_2",
+    "z0710_cust_vw": "dl_test_dataset.cust_test_vw_3",
+    "c_addtnl_col_lst": "",
+    "cust_where_clause": "WHERE 1=1"
+}

@@ -1,0 +1,14 @@
+{
+    "retail_account":{
+        "dag_id": "retail_account_build",
+        "schedule_interval": "@daily"
+    },
+    "customer": {
+        "dag_id": "customer_build",
+        "schedule_interval": "@daily"
+    },
+    "sales": {
+        "dag_id": "sales_build",
+        "schedule_interval": "@daily"
+    }
+}

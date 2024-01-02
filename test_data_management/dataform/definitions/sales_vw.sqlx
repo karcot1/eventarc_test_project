@@ -1,0 +1,16 @@
+config {
+    type: "view",
+    name: dataform.projectConfig.vars.salesName,
+    schema: dataform.projectConfig.vars.testADSchema,
+    tags: ["sales"],
+    dependencies: "sales_name_check"
+}
+
+select
+    sales_dtl_vw.col,
+    sales_vw.col2,
+    sales_dtl_vw.region
+from ${dataform.projectConfig.vars.z0015_sales_dtl_vw} sales_dtl_vw
+    inner join ${dataform.projectConfig.vars.z0014_sales_vw} sales_vw
+        on sales_dtl_vw.col = sales_vw.col
+${dataform.projectConfig.vars.sales_where_clause}

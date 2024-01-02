@@ -1,0 +1,85 @@
+config {
+    type: "operations",
+    tags: ["data_lake"]
+}
+
+-- RETAIL_ACCOUNT SAMPLE PROD TABLES --
+create table if not exists ${dataform.projectConfig.defaultSchema}.ra_prod_table_1 as
+select '1' as col, 'US' as region
+UNION ALL
+select '2' as col, 'US' as region
+UNION ALL
+select '3' as col, 'CAN' as region
+UNION ALL
+select '4' as col, 'CAN' as region;
+
+create table if not exists ${dataform.projectConfig.defaultSchema}.ra_prod_table_2 as
+select '1' as col, 1 as col2, 'US' as region
+UNION ALL
+select '2' as col, 2 as col2, 'US' as region
+UNION ALL
+select '3' as col, 3 as col2, 'CAN' as region;
+
+create table if not exists ${dataform.projectConfig.defaultSchema}.ra_prod_table_3 as
+select 2 as col2, 'a' as col3, 'US' as region 
+UNION ALL
+select 3 as col2, 'b' as col3, 'US' as region
+UNION ALL
+select 7 as col2, 'c' as col3, 'US' as region;
+
+-- CUSTOMER SAMPLE PROD TABLES --
+create table if not exists ${dataform.projectConfig.defaultSchema}.cust_prod_table_1 as
+select '5' as col, 'US' as region
+UNION ALL
+select '6' as col, 'CAN' as region
+UNION ALL
+select '7' as col, 'US' as region
+UNION ALL
+select '8' as col, 'CAN' as region;
+
+create table if not exists ${dataform.projectConfig.defaultSchema}.cust_prod_table_2 as
+select '5' as col, 3 as col2, 'US' as region
+UNION ALL
+select '6' as col, 4 as col2, 'US' as region
+UNION ALL
+select '7' as col, 5 as col2, 'US' as region;
+
+create table if not exists ${dataform.projectConfig.defaultSchema}.cust_prod_table_3 as
+select 3 as col2, 'c' as col3, 'US' as region 
+UNION ALL
+select 100 as col2, 'd' as col3, 'US' as region;
+
+-- SALES SAMPLE PROD TABLES --
+create table if not exists ${dataform.projectConfig.defaultSchema}.s_prod_table_1 as
+select '8' as col, 'US' as region
+UNION ALL
+select '9' as col, 'US' as region
+UNION ALL
+select '10' as col, 'US' as region
+UNION ALL
+select '11' as col, 'US' as region;
+
+create table if not exists ${dataform.projectConfig.defaultSchema}.s_prod_table_2 as
+select '9' as col, 9 as col2, 'US' as region
+UNION ALL
+select '10' as col, 10 as col2, 'US' as region;
+
+-- CREATE METADATA TABLES --
+create table if not exists ${dataform.projectConfig.defaultSchema}.user_metadata as (
+select 'arcotk@google.com' as user_id, 1 as access_level, 'US' as region
+UNION ALL
+select 'arcotk@google.com' as user_id, 0 as access_level, 'CAN' as region
+)
+;
+
+create table if not exists ${dataform.projectConfig.defaultSchema}.sensitive_cols as 
+select 'ra_prod_table_1' as table_id, 'col' as column_id
+UNION ALL
+select 'ra_prod_table_2' as table_id, 'col' as column_id
+UNION ALL
+select 'cust_prod_table_3' as table_id, 'col3' as column_id
+UNION ALL
+select 's_prod_table_1' as table_id, 'col' as column_id
+UNION ALL
+select 's_prod_table_2' as table_id, 'col' as column_id
+;

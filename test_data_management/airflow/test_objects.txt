@@ -1,0 +1,8 @@
+['ra_test_vw_1','ra_prod_table_1'],
+['ra_test_vw_2','ra_prod_table_2'],
+['ra_test_vw_3','ra_prod_table_3'],
+['cust_test_vw_1','cust_prod_table_1'],
+['cust_test_vw_2','cust_prod_table_2'],
+['cust_test_vw_3','cust_prod_table_3'],
+['s_test_vw_1','s_prod_table_1'],
+['s_test_vw_2','s_prod_table_2']

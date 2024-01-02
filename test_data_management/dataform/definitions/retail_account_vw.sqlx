@@ -1,0 +1,20 @@
+config {
+    type: "view",
+    name: dataform.projectConfig.vars.retailAccountName,
+    schema: dataform.projectConfig.vars.testADSchema,
+    tags: ["retail_account"],
+    dependencies: ["retail_acct_name_check"]
+}
+
+select
+    acct_dtl_vw.col,
+    acct_vw.col2,
+    xref.col3,
+    acct_dtl_vw.region
+    ${dataform.projectConfig.vars.ra_addtnl_col_lst}
+from ${dataform.projectConfig.vars.z0015_acct_dtl_vw} acct_dtl_vw
+    inner join ${dataform.projectConfig.vars.z0014_acct_vw} acct_vw
+        on acct_dtl_vw.col = acct_vw.col
+    left join ${dataform.projectConfig.vars.z0710_acct_xref_vw} xref
+        on acct_vw.col2 = xref.col2
+${dataform.projectConfig.vars.retail_where_clause}

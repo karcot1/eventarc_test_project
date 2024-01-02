@@ -1,0 +1,13 @@
+config {
+    type: "assertion",
+    tags: ["retail_account"]
+}
+
+select
+    CASE
+        WHEN "${dataform.projectConfig.vars.retailAccountName}" = "retail_account" THEN "match"
+        ELSE "no match"
+    END as retail_acct
+EXCEPT DISTINCT
+select
+    "no match" as retail_acct

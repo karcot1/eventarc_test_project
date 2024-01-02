@@ -1,0 +1,8 @@
+{
+    "retailAccountName": "retail_account_arcot_test",
+    "z0015_acct_dtl_vw": "dl_test_dataset.ra_test_vw_1",
+    "z0014_acct_vw": "dl_test_dataset.ra_test_vw_2",
+    "z0710_acct_xref_vw": "dl_test_dataset.ra_test_vw_3",
+    "ra_addtnl_col_lst": ", tbl1.col, tbl2.col5",
+    "retail_where_clause": "WHERE 1=1 AND xref.col2 is not null"
+}

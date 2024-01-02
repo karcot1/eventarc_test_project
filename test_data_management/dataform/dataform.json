@@ -1,0 +1,12 @@
+{
+    "defaultSchema": "dl_prod_dataset",
+    "assertionSchema": "dataform_assertions",
+    "warehouse": "bigquery",
+    "defaultDatabase": "",
+    "defaultLocation": "US",
+    "vars": {
+      "test_objects": "['test_vw_1','prod_table_4'],['test_vw_2','prod_table_5'],['test_vw_3','prod_table_6']",
+      "testSchema": "dl_test_dataset",
+      "testADSchema": "ad_test_dataset"
+    }
+  }

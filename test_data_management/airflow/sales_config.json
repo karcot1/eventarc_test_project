@@ -1,0 +1,7 @@
+{
+    "salesName": "sales_arcotk_test",
+    "z0015_sales_dtl_vw": "dl_test_dataset.s_test_vw_1",
+    "z0014_sales_vw": "dl_test_dataset.s_test_vw_2",
+    "s_addtnl_col_lst": "",
+    "sales_where_clause": "WHERE 1=1"
+}
