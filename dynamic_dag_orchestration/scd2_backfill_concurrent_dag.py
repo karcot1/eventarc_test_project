@@ -7,8 +7,8 @@ from airflow.providers.google.cloud.operators.dataform import (
 )
 
 PROJECT_ID = "dataform-test-362521"
-REPOSITORY_ID = "dataform-etl-test"
-WORKSPACE_ID = "dataform-etl-dev"
+REPOSITORY_ID = "test_data_management_example"
+WORKSPACE_ID = "dev"
 REGION = "us-central1"
 GIT_COMMITISH = "main"
 
