@@ -39,7 +39,7 @@ def get_days_array(start, end, no_of_days):
     
 def create_compilation_result(count,daylist,src_database,src_schema,src_table,target_database,target_schema,target_table,target_hash_unique_col_name,target_hash_non_unique_col_name,timestampfield,start_from_column_name,end_at_column_name):
     compilation_result = DataformCreateCompilationResultOperator(
-        task_id=f"create_compilation_result_{count}",
+        task_id=f"create_compilation_{count}",
         retries=0,
         project_id=PROJECT_ID,
         region=REGION,
