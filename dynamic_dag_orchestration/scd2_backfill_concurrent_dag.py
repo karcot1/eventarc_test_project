@@ -79,7 +79,7 @@ def create_workflow_invocation(count):
         region=REGION,
         repository_id=REPOSITORY_ID,
         workflow_invocation={
-            "compilation_result": "{{ task_instance.xcom_pull('create_compilation_result')['name'] }}",
+            "compilation_result": f"{{ task_instance.xcom_pull('create_compilation_{count}')['name'] }}",
             "invocation_config": {"included_tags":["scd2_backfill"]}
         },
     )
