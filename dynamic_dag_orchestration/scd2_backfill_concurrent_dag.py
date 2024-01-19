@@ -12,20 +12,8 @@ WORKSPACE_ID = "dev"
 REGION = "us-central1"
 GIT_COMMITISH = "main"
 
-src_database="latika-experiments"
-src_schema="dataform"
-src_table="covid_staging"
-target_database="latika-experiments"
-target_schema="dataform_scd_backfill"
-target_table="covid_final"
-target_hash_unique_col_name="hash_unique"
-target_hash_non_unique_col_name="hash_non_unique"
-timestampfield="date"
-start_from_column_name="eff_date"
-end_at_column_name="exp_date"
-
 start_date = date(2024,1,1)
-end_date = date(2024,1,16)
+end_date = date(2024,1,19)
 concurrency = 3
 
 def get_days_array(start, end, no_of_days):
@@ -37,7 +25,7 @@ def get_days_array(start, end, no_of_days):
     current_date += timedelta(days=no_of_days)  # Move to next start date
   return result
     
-def create_compilation_result(count,daylist,src_database,src_schema,src_table,target_database,target_schema,target_table,target_hash_unique_col_name,target_hash_non_unique_col_name,timestampfield,start_from_column_name,end_at_column_name):
+def create_compilation_result(count,daylist):
     compilation_result = DataformCreateCompilationResultOperator(
         task_id=f"create_compilation_{count}",
         retries=0,
@@ -47,18 +35,7 @@ def create_compilation_result(count,daylist,src_database,src_schema,src_table,ta
         compilation_result={
             "code_compilation_config": {
                 "vars": {
-                    "daylist": daylist,
-                    "src_database": src_database,
-                    "src_schema":src_schema,   
-                    "src_table":src_table, 
-                    "target_database":target_database,
-                    "target_schema":target_schema,
-                    "target_table":target_table, 
-                    "target_hash_unique_col_name":target_hash_unique_col_name,
-                    "target_hash_non_unique_col_name":target_hash_non_unique_col_name,  
-                    "timestampfield": timestampfield,
-                    "start_from_column_name": start_from_column_name,  
-                    "end_at_column_name": end_at_column_name
+                    "daylist": daylist
                 }
             },
             "git_commitish": GIT_COMMITISH,
@@ -80,7 +57,7 @@ def create_workflow_invocation(count):
         repository_id=REPOSITORY_ID,
         workflow_invocation={
             "compilation_result": f"{{ task_instance.xcom_pull('create_compilation_{count}')['name'] }}",
-            "invocation_config": {"included_tags":["scd2_backfill"]}
+            "invocation_config": {"included_tags":["scd2_backfill_test"]}
         },
     )
 
@@ -103,7 +80,7 @@ with models.DAG(
 
     for array in concurrent_days[1:]:
 
-        globals()["create_compilation_" + str(count)] = create_compilation_result(count,'"' + str(concurrent_days[count]) + '"',src_database,src_schema,src_table,target_database,target_schema,target_table,target_hash_unique_col_name,target_hash_non_unique_col_name,timestampfield,start_from_column_name,end_at_column_name)
+        globals()["create_compilation_" + str(count)] = create_compilation_result(count,str(concurrent_days[count]))
         globals()["invoke_workflow_" + str(count)] = create_workflow_invocation(count)
 
         task_arr.append(globals()["create_compilation_" + str(count)])
