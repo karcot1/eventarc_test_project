@@ -66,14 +66,11 @@ def create_workflow_invocation(count):
 with models.DAG(
     "scd2_backfill_test",
     schedule_interval=None,
-    start_date=datetime(2024, 1, 17),
+    start_date=datetime(2024, 1, 23),
     catchup=False,
 ) as dag:
-    days_arr = get_days_array(date(2024,1,1),date(2024,1,16),1)
+    days_arr = get_days_array(start_date,end_date,1)
     concurrent_days = [days_arr[i * concurrency:(i + 1) * concurrency] for i in range((len(days_arr) + concurrency - 1) // concurrency )] 
-
-    for array in  concurrent_days:
-       print('"' + str(array) + '"')
 
     task_arr=[]
     count = 0
