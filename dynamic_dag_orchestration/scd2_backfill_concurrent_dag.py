@@ -56,7 +56,7 @@ def create_workflow_invocation(count):
         region=REGION,
         repository_id=REPOSITORY_ID,
         workflow_invocation={
-            "compilation_result": f"{{ task_instance.xcom_pull('create_compilation_{count}')['name'] }}",
+            "compilation_result": "{" + f"{{ task_instance.xcom_pull('create_compilation_{count}')['name'] }}" + "}",
             "invocation_config": {"included_tags":["scd2_backfill_test"]}
         },
     )
@@ -78,7 +78,7 @@ with models.DAG(
     task_arr=[]
     count = 0
 
-    for array in concurrent_days[1:]:
+    for array in concurrent_days:
 
         globals()["create_compilation_" + str(count)] = create_compilation_result(count,str(concurrent_days[count]))
         globals()["invoke_workflow_" + str(count)] = create_workflow_invocation(count)
