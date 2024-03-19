@@ -1,3 +1,1 @@
-TODO: Add more info here
-
-General readme for all code samples related to the FMCC D&A workstream 
+The files in this repository contain sample code developed by Google PSO as part of an engagement with Ford Motor Credit Company (FMCC). All code in this repo is sample code and not representative of any real workflows, data, or information specific to FMCC. All code in this repository is licensed under the Apache License, Version 2.0
